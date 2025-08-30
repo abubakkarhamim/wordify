@@ -194,8 +194,8 @@
         <div class="mb-3">
           <label for="model" class="form-label">Model</label>
           <select class="form-select" id="model">
-            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
             <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
             <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
             <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
             <option value="gemini-pro">Gemini Pro</option>
@@ -340,7 +340,7 @@
       const model = document.getElementById("model").value;
       const file = document.getElementById("audioFile").files[0];
       const prompt = document.getElementById("prompt").value || 
-                    "Transcribe the audio to text. Please remove all filler words like 'um', 'uh', and 'like'.";
+                    "Transcribe the audio to text, nothing else, no extra word.";
 
       if (!apiKey || !file) {
         transcriptionDiv.textContent = "Please provide an API key in settings and record audio first.";
