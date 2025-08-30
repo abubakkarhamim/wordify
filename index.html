@@ -220,6 +220,7 @@
     let audioChunks = [];
     let timerInterval;
     let startTime;
+    let stream;
 
     document.addEventListener("DOMContentLoaded", () => {
       const savedApiKey = localStorage.getItem("geminiApiKey");
@@ -242,7 +243,8 @@
       const recordButton = document.getElementById("recordButton");
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
         try {
-          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          console.log("Microphone stream started.");
           mediaRecorder = new MediaRecorder(stream);
 
           mediaRecorder.ondataavailable = event => audioChunks.push(event.data);
@@ -267,16 +269,12 @@
           alert("Could not start recording. Please make sure you have a microphone connected and have granted permission.");
         }
       } else {
-        mediaRecorder.stop();
-        stopTimer();
+        stopRecording();
       }
     });
 
     document.getElementById('resetButton').addEventListener('click', () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-      }
-      stopTimer();
+      stopRecording();
       audioChunks = [];
       document.getElementById('recordButton').classList.remove("recording");
       document.querySelector('.wave-animation').classList.remove('recording');
@@ -285,10 +283,7 @@
     });
 
     document.getElementById('finishButton').addEventListener('click', async () => {
-      if (mediaRecorder && mediaRecorder.state === "recording") {
-        mediaRecorder.stop();
-        stopTimer();
-      }
+      stopRecording();
       // Small delay to ensure the onstop event has time to process
       setTimeout(startTranscription, 100);
     });
@@ -352,6 +347,18 @@
       };
       
       reader.readAsArrayBuffer(file);
+    }
+
+    function stopRecording() {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+      }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+        console.log("Microphone stream stopped.");
+      }
+      stopTimer();
     }
 
     function updateTimer() {
