@@ -137,6 +137,14 @@
         top: 10px;
         right: 10px;
       }
+      .settings-dropdown {
+        min-width: 0;
+        width: 100%;
+        left: 0;
+        right: 0;
+        top: 60px; /* Position it below the settings icon */
+        border-radius: 0;
+      }
     }
   </style>
 </head>
@@ -209,6 +217,7 @@
     <input type="file" id="audioFile" accept="audio/*" style="display: none;">
 
     <div id="transcription" class="mt-4"></div>
+    <button id="copyButton" class="btn btn-secondary mt-2" style="display: none;">Copy</button>
   </div>
 
   <script>
@@ -276,6 +285,7 @@
       document.querySelector('.wave-animation').classList.remove('recording');
       document.getElementById('transcription').textContent = "";
       document.getElementById('audioFile').value = "";
+      document.getElementById('copyButton').style.display = 'none';
     });
 
     document.getElementById('finishButton').addEventListener('click', async () => {
@@ -284,8 +294,22 @@
       setTimeout(startTranscription, 100);
     });
 
+    document.getElementById('copyButton').addEventListener('click', () => {
+      const transcriptionText = document.getElementById('transcription').textContent;
+      navigator.clipboard.writeText(transcriptionText).then(() => {
+        const copyButton = document.getElementById('copyButton');
+        copyButton.textContent = 'Copied!';
+        setTimeout(() => {
+          copyButton.textContent = 'Copy';
+        }, 2000);
+      }).catch(err => {
+        console.error('Failed to copy text: ', err);
+      });
+    });
+
     async function startTranscription() {
       const transcriptionDiv = document.getElementById("transcription");
+      const copyButton = document.getElementById('copyButton');
       const apiKey = document.getElementById("apiKey").value;
       const model = document.getElementById("model").value;
       const file = document.getElementById("audioFile").files[0];
@@ -298,6 +322,7 @@
       }
 
       transcriptionDiv.textContent = "Processing...";
+      copyButton.style.display = 'none';
 
       const reader = new FileReader();
       reader.onload = async function() {
@@ -332,6 +357,7 @@
             transcriptionDiv.textContent = "Error: You have exceeded your API quota. Please check your plan and billing details.";
           } else if (data.candidates && data.candidates[0].content) {
             transcriptionDiv.textContent = data.candidates[0].content.parts[0].text;
+            copyButton.style.display = 'block';
           } else {
             console.error("Error with API response:", data);
             transcriptionDiv.textContent = "Error: Could not transcribe audio. The API response was: " + JSON.stringify(data);
