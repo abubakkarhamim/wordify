@@ -340,8 +340,7 @@
       const model = document.getElementById("model").value;
       const file = document.getElementById("audioFile").files[0];
       const prompt = document.getElementById("prompt").value || 
-                    "Transcribe the audio to text, nothing else, no extra word. After transcription Please remove all filler words like 'um', 'uh'. When a word is repeated consecutively without grammatical or stylistic justification (like 'I will I will', 'I I', 'But still But still'), remove the duplicate and keep only one occurrence.
-";
+                    "Transcribe the audio to text, nothing else, no extra word. After transcription Please remove all filler words like 'um', 'uh'. Also after transcription, collapse consecutive duplicate words into one, unless the repetition is intentional for emphasis or natural speech.";
 
       if (!apiKey || !file) {
         transcriptionDiv.textContent = "Please provide an API key in settings and record audio first.";
