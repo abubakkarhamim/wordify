@@ -177,9 +177,10 @@
       const apiKey = document.getElementById("apiKey").value;
       const model = document.getElementById("model").value;
       const file = document.getElementById("audioFile").files[0];
-      const prompt = document.getElementById("prompt").value || 
-                    "Transcribe the audio to text, nothing else, no extra word. After transcription Please remove all filler words like 'um', 'uh'. Also after transcription, collapse consecutive duplicate words into one, unless the repetition is intentional for emphasis or natural speech.";
-
+      
+      // First prompt just for transcription
+      const transcriptionPrompt = "Transcribe the audio to text accurately, maintaining all spoken words.";
+      
       if (!apiKey || !file) {
         transcriptionDiv.textContent = "Please provide an API key in settings and record audio first.";
         return;
@@ -197,14 +198,15 @@
         );
 
         try {
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+          // Step 1: Get raw transcription
+          const transcriptionRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               contents: [{
                 role: "user",
                 parts: [
-                  { text: prompt },
+                  { text: transcriptionPrompt },
                   {
                     inline_data: {
                       mime_type: file.type,
@@ -216,19 +218,55 @@
             })
           });
 
-          const data = await res.json();
-          if (res.status === 429) {
+          const transcriptionData = await transcriptionRes.json();
+          
+          if (transcriptionRes.status === 429) {
             transcriptionDiv.textContent = "Error: You have exceeded your API quota. Please check your plan and billing details.";
-          } else if (data.candidates && data.candidates[0].content) {
-            transcriptionDiv.textContent = data.candidates[0].content.parts[0].text;
+            return;
+          }
+
+          if (!transcriptionData.candidates?.[0]?.content) {
+            throw new Error("Invalid transcription response");
+          }
+
+          const rawTranscription = transcriptionData.candidates[0].content.parts[0].text;
+          transcriptionDiv.textContent = "Cleaning up transcription...";
+
+          // Step 2: Clean up the transcription
+          const cleanupPrompt = `Please clean up this transcription by:
+1. Removing filler words like 'um', 'uh', 'hmm', etc.
+2. Removing unintentional word repetitions
+3. Maintaining intentional repetitions used for emphasis
+4. Keeping the meaning and content intact
+5. No extra information or anything just clean text.
+
+Transcription to clean:
+${rawTranscription}`;
+
+          const cleanupRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [{
+                role: "user",
+                parts: [{ text: cleanupPrompt }]
+              }]
+            })
+          });
+
+          const cleanupData = await cleanupRes.json();
+          
+          if (cleanupData.candidates?.[0]?.content) {
+            transcriptionDiv.textContent = cleanupData.candidates[0].content.parts[0].text;
             copyButton.style.display = 'block';
           } else {
-            console.error("Error with API response:", data);
-            transcriptionDiv.textContent = "Error: Could not transcribe audio. The API response was: " + JSON.stringify(data);
+            console.error("Error with cleanup API response:", cleanupData);
+            transcriptionDiv.textContent = rawTranscription; // Fallback to raw transcription
+            copyButton.style.display = 'block';
           }
         } catch (err) {
           console.error("Error during transcription:", err);
-          transcriptionDiv.textContent = "Error: Could not connect to the transcription service.";
+          transcriptionDiv.textContent = "Error: Could not complete the transcription process.";
         }
       };
       
