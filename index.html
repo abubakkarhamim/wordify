@@ -113,6 +113,8 @@
       const recordButton = document.getElementById("recordButton");
       if (!mediaRecorder || mediaRecorder.state === "inactive") {
         try {
+          audioChunks = [];
+          transcriptionPromises = [];
           stream = await navigator.mediaDevices.getUserMedia({ audio: true });
           console.log("Microphone stream started.");
           mediaRecorder = new MediaRecorder(stream);
@@ -166,8 +168,16 @@
         const copyButton = document.getElementById('copyButton');
         transcriptionDiv.textContent = "Finalizing transcription...";
         try {
-          const transcriptions = await Promise.all(transcriptionPromises);
-          transcriptionDiv.textContent = transcriptions.join(" ").trim();
+          const results = await Promise.allSettled(transcriptionPromises);
+          let fullTranscription = "";
+          results.forEach(result => {
+            if (result.status === 'fulfilled') {
+              fullTranscription += result.value + " ";
+            } else {
+              console.error("A chunk failed to transcribe:", result.reason);
+            }
+          });
+          transcriptionDiv.textContent = fullTranscription.trim();
           copyButton.style.display = 'block';
         } catch (err) {
           console.error("Error finalizing transcription:", err);
