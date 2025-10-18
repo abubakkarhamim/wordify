@@ -1,2 +1,2 @@
 # audio2text
-https://abubakkarhamim.github.io/wordify/
+https://thesiddikhamim.github.io/wordify/
